@@ -1,24 +1,23 @@
 import { Inject, NotImplementedException } from '@nestjs/common';
 import { compact, sumBy } from 'lodash';
 
-import { drillBalance } from '~app-toolkit';
 import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { ZERO_ADDRESS } from '~app-toolkit/constants/address';
+import { drillBalance } from '~app-toolkit/helpers/drill-balance.helper';
 import { Cache } from '~cache/cache.decorator';
 import { ContractPositionBalance } from '~position/position-balance.interface';
-import { ContractPosition, MetaType } from '~position/position.interface';
+import { MetaType } from '~position/position.interface';
 import { isBorrowed } from '~position/position.utils';
-import { ContractPositionTemplatePositionFetcher } from '~position/template/contract-position.template.position-fetcher';
 import {
   GetDataPropsParams,
   GetDisplayPropsParams,
   GetTokenDefinitionsParams,
 } from '~position/template/contract-position.template.types';
+import { CustomContractPositionTemplatePositionFetcher } from '~position/template/custom-contract-position.template.position-fetcher';
 import { Network, NETWORK_IDS } from '~types';
 
 import { HomoraBank, HomoraV2ContractFactory } from '../contracts';
 import httpClient from '../helpers/httpClient';
-import HOMORA_V_2_DEFINITION from '../homora-v2.definition';
 import { Exchange, Poolstatus } from '../interfaces/enums';
 import {
   HomoraV2FarmingPositionDataProps,
@@ -27,7 +26,7 @@ import {
   PoolPosition,
 } from '../interfaces/interfaces';
 
-export abstract class HomoraV2FarmContractPositionFetcher extends ContractPositionTemplatePositionFetcher<
+export abstract class HomoraV2FarmContractPositionFetcher extends CustomContractPositionTemplatePositionFetcher<
   HomoraBank,
   HomoraV2FarmingPositionDataProps,
   HomoraV2FarmingPositionDefinition
@@ -71,8 +70,16 @@ export abstract class HomoraV2FarmContractPositionFetcher extends ContractPositi
 
   async getTokenDefinitions({ definition }: GetTokenDefinitionsParams<HomoraBank, HomoraV2FarmingPositionDefinition>) {
     return [
-      { metaType: MetaType.SUPPLIED, address: definition.poolAddress },
-      ...definition.tokenAddresses.map(token => ({ metaType: MetaType.BORROWED, address: token })),
+      {
+        metaType: MetaType.SUPPLIED,
+        address: definition.poolAddress,
+        network: this.network,
+      },
+      ...definition.tokenAddresses.map(token => ({
+        metaType: MetaType.BORROWED,
+        address: token,
+        network: this.network,
+      })),
     ];
   }
 
@@ -92,6 +99,7 @@ export abstract class HomoraV2FarmContractPositionFetcher extends ContractPositi
       poolAddress,
       tradingVolume: definition.tradingVolume,
       feeTier,
+      positionKey: key,
     };
   }
 
@@ -108,10 +116,6 @@ export abstract class HomoraV2FarmContractPositionFetcher extends ContractPositi
     }
 
     return `[${definition.exchange}] ${definition.poolName}`;
-  }
-
-  getKey({ contractPosition }: { contractPosition: ContractPosition<HomoraV2FarmingPositionDataProps> }) {
-    return this.appToolkit.getPositionKey(contractPosition, ['key']);
   }
 
   async getNativeToken() {
@@ -140,7 +144,7 @@ export abstract class HomoraV2FarmContractPositionFetcher extends ContractPositi
 
   @Cache({
     instance: 'business',
-    key: (network: Network) => `studio:${HOMORA_V_2_DEFINITION.id}:${network}:positions-data`,
+    key: (network: Network) => `studio:homora-v2:${network}:positions-data`,
     ttl: 3 * 60,
   })
   private async getPositionsData(network: Network) {

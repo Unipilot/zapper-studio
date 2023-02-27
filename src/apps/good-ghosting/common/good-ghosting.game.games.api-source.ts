@@ -4,15 +4,14 @@ import axios from 'axios';
 import { CacheOnInterval } from '~cache/cache-on-interval.decorator';
 import { Network, NETWORK_IDS } from '~types';
 
-import GOOD_GHOSTING_DEFINITION from '../good-ghosting.definition';
-
 import { NetworkId, getGameVersionType, RewardType, BASE_API_URL, GamesResponse } from './good-ghosting.game.constants';
 
 @Injectable()
 export class GoodGhostingGameGamesApiSource {
   @CacheOnInterval({
-    key: `studio:${GOOD_GHOSTING_DEFINITION.id}:${GOOD_GHOSTING_DEFINITION.groups.game}:addresses`,
+    key: `studio:good-ghosting:game:addresses`,
     timeout: 15 * 60 * 1000,
+    failOnMissingData: false,
   })
   async getCachedGameConfigsData() {
     const url = `${BASE_API_URL}/games`;
@@ -55,12 +54,11 @@ export class GoodGhostingGameGamesApiSource {
       const isPolygonGame = NetworkId.PolygonMainnet === networkId;
       const isCeloGame = NetworkId.CeloMainnet === networkId;
 
-      if (isV2Game && rewards) {
-        rewards.map(reward => {
+      if (isV2Game) {
+        rewards?.map(reward => {
           rewardTokens[reward.type] = reward.address;
-          rewardTokens[RewardType.Deposit] = depositTokenAddress;
         });
-
+        rewardTokens[RewardType.Deposit] = depositTokenAddress;
         const rewardTokenAddress = Object.values(rewardTokens);
         rewardTokenAddresses = [...rewardTokenAddress];
       }

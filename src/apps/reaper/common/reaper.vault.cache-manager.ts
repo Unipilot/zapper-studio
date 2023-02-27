@@ -4,8 +4,6 @@ import { uniqBy } from 'lodash';
 import { CacheOnInterval } from '~cache/cache-on-interval.decorator';
 import { Network } from '~types/network.interface';
 
-import { REAPER_DEFINITION } from '../reaper.definition';
-
 type ReaperCryptsAPIData = {
   data: {
     _id: string;
@@ -66,16 +64,18 @@ export class ReaperVaultCacheManager {
   }
 
   @CacheOnInterval({
-    key: `studio:${Network.FANTOM_OPERA_MAINNET}:${REAPER_DEFINITION.id}:${REAPER_DEFINITION.groups.vault.id}:addresses`,
+    key: `studio:fantom:reaper:vault:addresses`,
     timeout: 5 * 60 * 1000,
+    failOnMissingData: false,
   })
   private async getFantomCryptDefinitions() {
     return this.fetchCryptDefinitions('https://yzo0r3ahok.execute-api.us-east-1.amazonaws.com/dev/api/crypts');
   }
 
   @CacheOnInterval({
-    key: `studio:${Network.OPTIMISM_MAINNET}:${REAPER_DEFINITION.id}:${REAPER_DEFINITION.groups.vault.id}:addresses`,
+    key: `studio:optimism:reaper:vault:addresses`,
     timeout: 5 * 60 * 1000,
+    failOnMissingData: false,
   })
   private async getOptimismCryptDefinitions() {
     return this.fetchCryptDefinitions('https://yzo0r3ahok.execute-api.us-east-1.amazonaws.com/dev/api/optimism/crypts');

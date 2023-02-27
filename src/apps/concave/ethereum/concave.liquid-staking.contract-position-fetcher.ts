@@ -5,16 +5,17 @@ import { gql } from 'graphql-request';
 import { sumBy } from 'lodash';
 import moment from 'moment';
 
-import { drillBalance } from '~app-toolkit';
 import { IAppToolkit, APP_TOOLKIT } from '~app-toolkit/app-toolkit.interface';
 import { PositionTemplate } from '~app-toolkit/decorators/position-template.decorator';
+import { drillBalance } from '~app-toolkit/helpers/drill-balance.helper';
+import { gqlFetch } from '~app-toolkit/helpers/the-graph.helper';
 import { ContractType } from '~position/contract.interface';
 import { DefaultDataProps } from '~position/display.interface';
 import { ContractPositionBalance } from '~position/position-balance.interface';
 import { MetaType } from '~position/position.interface';
 import { isClaimable, isSupplied } from '~position/position.utils';
-import { ContractPositionTemplatePositionFetcher } from '~position/template/contract-position.template.position-fetcher';
 import { GetTokenBalancesParams, GetTokenDefinitionsParams } from '~position/template/contract-position.template.types';
+import { CustomContractPositionTemplatePositionFetcher } from '~position/template/custom-contract-position.template.position-fetcher';
 
 import { ConcaveContractFactory, Lsdcnv } from '../contracts';
 
@@ -55,7 +56,7 @@ export type ConcaveLsdcnvContractPositionDataProps = {
 };
 
 @PositionTemplate()
-export class EthereumConcaveLiquidStakingContractPositionFetcher extends ContractPositionTemplatePositionFetcher<Lsdcnv> {
+export class EthereumConcaveLiquidStakingContractPositionFetcher extends CustomContractPositionTemplatePositionFetcher<Lsdcnv> {
   groupLabel = 'Liquid Staking';
 
   constructor(
@@ -75,8 +76,16 @@ export class EthereumConcaveLiquidStakingContractPositionFetcher extends Contrac
 
   async getTokenDefinitions(_params: GetTokenDefinitionsParams<Lsdcnv>) {
     return [
-      { metaType: MetaType.SUPPLIED, address: '0x000000007a58f5f58e697e51ab0357bc9e260a04' },
-      { metaType: MetaType.CLAIMABLE, address: '0x000000007a58f5f58e697e51ab0357bc9e260a04' },
+      {
+        metaType: MetaType.SUPPLIED,
+        address: '0x000000007a58f5f58e697e51ab0357bc9e260a04',
+        network: this.network,
+      },
+      {
+        metaType: MetaType.CLAIMABLE,
+        address: '0x000000007a58f5f58e697e51ab0357bc9e260a04',
+        network: this.network,
+      },
     ];
   }
 
@@ -100,7 +109,7 @@ export class EthereumConcaveLiquidStakingContractPositionFetcher extends Contrac
     const balanceRaw = await contract.balanceOf(address);
     if (Number(balanceRaw) === 0) return [];
 
-    const lockData = await this.appToolkit.helpers.theGraphHelper.requestGraph<ConcaveStakingV1LockData>({
+    const lockData = await gqlFetch<ConcaveStakingV1LockData>({
       endpoint: 'https://concave.hasura.app/v1/graphql',
       query: GET_STAKING_V1_LOCK_EVENTS,
       variables: { address: getAddress(address) },

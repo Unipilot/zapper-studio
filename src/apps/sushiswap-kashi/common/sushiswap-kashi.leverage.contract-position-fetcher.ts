@@ -12,7 +12,6 @@ import {
 } from '~position/template/contract-position.template.types';
 
 import { SushiswapKashiContractFactory, SushiswapKashiLendingToken } from '../contracts';
-import { SUSHISWAP_KASHI_DEFINITION } from '../sushiswap-kashi.definition';
 
 export type SushiswapKashiLeverageDefinition = {
   address: string;
@@ -40,8 +39,8 @@ export class SushiswapKashiLeverageContractPositionFetcher extends ContractPosit
 
   async getDefinitions(): Promise<SushiswapKashiLeverageDefinition[]> {
     const sushiswapKashiTokens = await this.appToolkit.getAppTokenPositions({
-      appId: SUSHISWAP_KASHI_DEFINITION.id,
-      groupIds: [SUSHISWAP_KASHI_DEFINITION.groups.lending.id],
+      appId: this.appId,
+      groupIds: ['lending'],
       network: this.network,
     });
 
@@ -56,8 +55,16 @@ export class SushiswapKashiLeverageContractPositionFetcher extends ContractPosit
     definition,
   }: GetTokenDefinitionsParams<SushiswapKashiLendingToken, SushiswapKashiLeverageDefinition>) {
     return [
-      { metaType: MetaType.BORROWED, address: definition.assetAddress },
-      { metaType: MetaType.SUPPLIED, address: definition.collateralAddress },
+      {
+        metaType: MetaType.BORROWED,
+        address: definition.assetAddress,
+        network: this.network,
+      },
+      {
+        metaType: MetaType.SUPPLIED,
+        address: definition.collateralAddress,
+        network: this.network,
+      },
     ];
   }
 

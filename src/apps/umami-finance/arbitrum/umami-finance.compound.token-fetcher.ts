@@ -37,15 +37,13 @@ export class ArbitrumUmamiFinanceCompoundTokenFetcher extends AppTokenTemplatePo
     return ['0x1922c36f3bc762ca300b4a46bb2102f84b1684ab'];
   }
 
-  async getUnderlyingTokenAddresses(): Promise<string> {
-    return '0x2adabd6e8ce3e82f52d9998a7f64a90d294a92a4';
+  async getUnderlyingTokenDefinitions() {
+    return [{ address: '0x2adabd6e8ce3e82f52d9998a7f64a90d294a92a4', network: this.network }];
   }
 
   async getPricePerShare({
     appToken,
-  }: GetPricePerShareParams<UmamiFinanceCompound, DefaultAppTokenDataProps, DefaultAppTokenDefinition>): Promise<
-    number | number[]
-  > {
+  }: GetPricePerShareParams<UmamiFinanceCompound, DefaultAppTokenDataProps, DefaultAppTokenDefinition>) {
     const underlyingTokenContract = this.contractFactory.umamiFinanceMarinate({
       address: appToken.tokens[0].address,
       network: this.network,
@@ -54,7 +52,7 @@ export class ArbitrumUmamiFinanceCompoundTokenFetcher extends AppTokenTemplatePo
     const balanceRaw = await underlyingTokenContract.balanceOf(appToken.address);
     const reserve = Number(balanceRaw) / 10 ** appToken.decimals;
     const pricePerShare = reserve / appToken.supply;
-    return pricePerShare;
+    return [pricePerShare];
   }
 
   async getReserves({ appToken }: GetDataPropsParams<UmamiFinanceCompound>) {
@@ -66,10 +64,6 @@ export class ArbitrumUmamiFinanceCompoundTokenFetcher extends AppTokenTemplatePo
     const balanceRaw = await underlyingTokenContract.balanceOf(appToken.address);
     const reserve = Number(balanceRaw) / 10 ** appToken.decimals;
     return [reserve];
-  }
-
-  async getLiquidity({ appToken }: GetDataPropsParams<UmamiFinanceCompound>) {
-    return appToken.supply * appToken.price;
   }
 
   async getApy(_params: GetDataPropsParams<UmamiFinanceCompound>) {

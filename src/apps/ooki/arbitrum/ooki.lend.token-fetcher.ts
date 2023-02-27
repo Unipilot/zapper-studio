@@ -3,11 +3,7 @@ import { Inject } from '@nestjs/common';
 import { IAppToolkit, APP_TOOLKIT } from '~app-toolkit/app-toolkit.interface';
 import { PositionTemplate } from '~app-toolkit/decorators/position-template.decorator';
 import { AppTokenTemplatePositionFetcher } from '~position/template/app-token.template.position-fetcher';
-import {
-  GetDataPropsParams,
-  GetPricePerShareParams,
-  GetUnderlyingTokensParams,
-} from '~position/template/app-token.template.types';
+import { GetPricePerShareParams, GetUnderlyingTokensParams } from '~position/template/app-token.template.types';
 
 import { OokiContractFactory, OokiIToken } from '../contracts';
 
@@ -38,24 +34,13 @@ export class ArbitrumOokiLendTokenFetcher extends AppTokenTemplatePositionFetche
     return tokenAddresses.map(v => v.token);
   }
 
-  getUnderlyingTokenAddresses({ contract }: GetUnderlyingTokensParams<OokiIToken>) {
-    return contract.loanTokenAddress();
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<OokiIToken>) {
+    return [{ address: await contract.loanTokenAddress(), network: this.network }];
   }
 
   async getPricePerShare({ contract }: GetPricePerShareParams<OokiIToken>) {
     const exchangeRateRaw = await contract.tokenPrice();
-    return Number(exchangeRateRaw) / 10 ** 18;
-  }
-
-  getLiquidity({ appToken }: GetDataPropsParams<OokiIToken>) {
-    return appToken.supply * appToken.price;
-  }
-
-  getReserves({ appToken }: GetDataPropsParams<OokiIToken>) {
-    return [appToken.pricePerShare[0] * appToken.supply];
-  }
-
-  getApy(_params: GetDataPropsParams<OokiIToken>) {
-    return 0;
+    const exchangeRate = Number(exchangeRateRaw) / 10 ** 18;
+    return [exchangeRate];
   }
 }

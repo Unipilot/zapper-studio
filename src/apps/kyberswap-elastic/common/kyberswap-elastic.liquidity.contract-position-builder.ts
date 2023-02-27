@@ -3,8 +3,8 @@ import BigNumber from 'bignumber.js';
 import { BigNumberish } from 'ethers';
 import { sumBy } from 'lodash';
 
-import { drillBalance } from '~app-toolkit';
 import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
+import { drillBalance } from '~app-toolkit/helpers/drill-balance.helper';
 import { buildDollarDisplayItem } from '~app-toolkit/helpers/presentation/display-item.present';
 import { getImagesFromToken } from '~app-toolkit/helpers/presentation/image.present';
 import { IMulticallWrapper } from '~multicall';
@@ -16,7 +16,6 @@ import { TokenDependencySelector } from '~position/selectors/token-dependency-se
 import { Network } from '~types/network.interface';
 
 import { KyberswapElasticContractFactory } from '../contracts';
-import { KYBERSWAP_ELASTIC_DEFINITION } from '../kyberswap-elastic.definition';
 
 import { KyberswapElasticLiquidityPositionDataProps } from './kyberswap-elastic.liquidity.contract-position-fetcher';
 import {
@@ -118,14 +117,16 @@ export class KyberswapElasticLiquidityContractPositionBuilder {
       );
     }
 
+    const feeTier = Number(fee) / 10 ** 4;
     const dataProps: KyberswapElasticLiquidityPositionDataProps = {
-      feeTier: Number(fee) / 10 ** 4,
+      feeTier,
       rangeStart: range[0],
       rangeEnd: range[1],
       liquidity: totalLiquidity,
       reserves: reserves,
       poolAddress: poolAddr.toLowerCase(),
       assetStandard: Standard.ERC_721,
+      positionKey: `${feeTier}`,
     };
 
     const displayProps = {
@@ -137,8 +138,8 @@ export class KyberswapElasticLiquidityContractPositionBuilder {
     const balance: ContractPositionBalance<KyberswapElasticLiquidityPositionDataProps> = {
       type: ContractType.POSITION,
       address: this.managerAddress,
-      appId: KYBERSWAP_ELASTIC_DEFINITION.id,
-      groupId: KYBERSWAP_ELASTIC_DEFINITION.groups.liquidity.id,
+      appId: 'kyberswap-elastic',
+      groupId: 'liquidity',
       network,
       tokens,
       dataProps,

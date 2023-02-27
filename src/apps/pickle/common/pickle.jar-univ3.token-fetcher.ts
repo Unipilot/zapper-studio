@@ -10,6 +10,7 @@ import { AppTokenTemplatePositionFetcher } from '~position/template/app-token.te
 import {
   GetDataPropsParams,
   GetPricePerShareParams,
+  GetTokenPropsParams,
   GetUnderlyingTokensParams,
 } from '~position/template/app-token.template.types';
 
@@ -50,20 +51,20 @@ export abstract class PickleJarUniv3TokenFetcher extends AppTokenTemplatePositio
         const contract = multicall.wrap(this.getContract(address));
         const context = { address, definition, contract, multicall, tokenLoader };
 
-        const underlyingTokenAddress = await this.getUnderlyingTokenAddresses(context)
-          .then(v => v.toLowerCase())
+        const underlyingTokenDefinitions = await this.getUnderlyingTokenDefinitions(context)
+          .then(v => v.map(t => ({ address: t.address.toLowerCase(), network: t.network })))
           .catch(err => {
             if (isMulticallUnderlyingError(err)) return null;
             throw err;
           });
 
-        if (!underlyingTokenAddress) return null;
+        if (!underlyingTokenDefinitions) return null;
 
         const controllerAddr = await contract.controller();
         const controller = multicall.wrap(
           this.contractFactory.pickleController({ address: controllerAddr, network: this.network }),
         );
-        const strategyAddr = await controller.strategies(underlyingTokenAddress);
+        const strategyAddr = await controller.strategies(underlyingTokenDefinitions[0].address);
         const strategy = multicall.wrap(
           this.contractFactory.pickleStrategyUniv3({ address: strategyAddr, network: this.network }),
         );
@@ -77,7 +78,7 @@ export abstract class PickleJarUniv3TokenFetcher extends AppTokenTemplatePositio
           });
         if (!tokenId) return null;
 
-        return { address, definition, underlyingTokenAddress, tokenId };
+        return { address, definition, underlyingTokenDefinitions, tokenId };
       }),
     );
 
@@ -96,8 +97,17 @@ export abstract class PickleJarUniv3TokenFetcher extends AppTokenTemplatePositio
 
         // Get standard Jar stats
         const contract = multicall.wrap(this.getContract(address));
-        const baseContext = { address, definition, contract, multicall, tokenLoader };
 
+        const baseFragment: GetTokenPropsParams<PickleJarUniv3>['appToken'] = {
+          type: ContractType.APP_TOKEN,
+          appId: this.appId,
+          groupId: this.groupId,
+          network: this.network,
+          address,
+          tokens: uniV3Token.tokens,
+        };
+
+        const baseContext = { address, definition, contract, multicall, tokenLoader, appToken: baseFragment };
         const [symbol, decimals, totalSupplyRaw] = await Promise.all([
           this.getSymbol(baseContext),
           this.getDecimals(baseContext),
@@ -105,24 +115,13 @@ export abstract class PickleJarUniv3TokenFetcher extends AppTokenTemplatePositio
         ]);
         const supply = Number(totalSupplyRaw) / 10 ** decimals;
 
-        const baseFragment: GetPricePerShareParams<PickleJarUniv3, DefaultDataProps>['appToken'] = {
-          type: ContractType.APP_TOKEN,
-          appId: this.appId,
-          groupId: this.groupId,
-          network: this.network,
-          address,
-          symbol,
-          decimals,
-          supply,
-          tokens: uniV3Token.tokens,
-        };
-
         // Resolve price per share stage
-        const pricePerShareContext = { ...baseContext, appToken: baseFragment };
+        const pricePerShareStageFragment = { ...baseFragment, symbol, decimals, supply };
+        const pricePerShareContext = { ...baseContext, appToken: pricePerShareStageFragment };
         const pricePerShare = await this.getPricePerShare(pricePerShareContext).then(v => (isArray(v) ? v : [v]));
 
         // Resolve Price Stage
-        const priceStageFragment = { ...baseFragment, pricePerShare };
+        const priceStageFragment = { ...pricePerShareStageFragment, pricePerShare };
         const price = uniV3Token.balanceUSD / supply;
 
         // Resolve Data Props Stage
@@ -137,7 +136,7 @@ export abstract class PickleJarUniv3TokenFetcher extends AppTokenTemplatePositio
         const displayPropsStageFragment = { ...dataPropsStageFragment, dataProps };
         const displayProps = uniV3Token.displayProps;
         const appToken = { ...displayPropsStageFragment, displayProps };
-        const key = this.getKey({ appToken });
+        const key = this.appToolkit.getPositionKey(appToken);
         return { key, ...appToken };
       }),
     );
@@ -158,13 +157,12 @@ export abstract class PickleJarUniv3TokenFetcher extends AppTokenTemplatePositio
     return vaults.map(v => v.vaultAddress);
   }
 
-  async getUnderlyingTokenAddresses({ contract }: GetUnderlyingTokensParams<PickleJarUniv3>): Promise<string> {
-    const pool = await contract.pool();
-    return pool;
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<PickleJarUniv3>) {
+    return [{ address: await contract.pool(), network: this.network }];
   }
 
-  async getPricePerShare({ contract }: GetPricePerShareParams<PickleJarUniv3, DefaultDataProps>): Promise<number> {
-    return contract.getRatio().then(v => Number(v) / 10 ** 18);
+  async getPricePerShare({ contract }: GetPricePerShareParams<PickleJarUniv3, DefaultDataProps>) {
+    return contract.getRatio().then(v => [Number(v) / 10 ** 18]);
   }
 
   async getLiquidity() {

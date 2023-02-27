@@ -4,8 +4,6 @@ import Axios from 'axios';
 import { CacheOnInterval } from '~cache/cache-on-interval.decorator';
 import { Network } from '~types/network.interface';
 
-import { PICKLE_DEFINITION } from '../pickle.definition';
-
 export type PicklePoolDetails = {
   identifier: string;
   liquidity_locked: number;
@@ -26,7 +24,6 @@ const NETWORK_MAPPING = {
   [Network.MOONRIVER_MAINNET]: 'moonriver',
   [Network.OPTIMISM_MAINNET]: 'optimism',
   [Network.FANTOM_OPERA_MAINNET]: 'fantom',
-  [Network.CRONOS_MAINNET]: 'cronos',
   [Network.GNOSIS_MAINNET]: 'gnosis',
   [Network.AURORA_MAINNET]: 'aurora',
 };
@@ -34,8 +31,9 @@ const NETWORK_MAPPING = {
 @Injectable()
 export class PickleApiJarRegistry {
   @CacheOnInterval({
-    key: `studio:${PICKLE_DEFINITION.id}:${PICKLE_DEFINITION.groups.jar.id}:jar-definitions-data`,
+    key: `studio:pickle:jar:jar-definitions-data`,
     timeout: 5 * 60 * 1000,
+    failOnMissingData: false,
   })
   private async getJarDefinitionsData() {
     const apyUrl = 'https://api.pickle.finance/prod/protocol/pools';

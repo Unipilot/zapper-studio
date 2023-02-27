@@ -35,16 +35,12 @@ export class EthereumBendDaoSupplyTokenFetcher extends AppTokenTemplatePositionF
     return [this.bTokenAddress];
   }
 
-  async getUnderlyingTokenAddresses({ contract }: GetUnderlyingTokensParams<BendDaoBToken>) {
-    return contract.UNDERLYING_ASSET_ADDRESS();
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<BendDaoBToken>) {
+    return [{ address: await contract.UNDERLYING_ASSET_ADDRESS(), network: this.network }];
   }
 
-  async getLiquidity({ appToken }: GetDataPropsParams<BendDaoBToken>): Promise<number> {
-    return appToken.price * appToken.supply;
-  }
-
-  async getReserves({ appToken }: GetDataPropsParams<BendDaoBToken>): Promise<number[]> {
-    return [appToken.pricePerShare[0] * appToken.supply];
+  async getPricePerShare() {
+    return [1];
   }
 
   async getApy({ multicall }: GetDataPropsParams<BendDaoBToken>): Promise<number> {

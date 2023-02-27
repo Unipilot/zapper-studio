@@ -38,8 +38,8 @@ export abstract class DhedgeV2PoolTokenFetcher extends AppTokenTemplatePositionF
     return deployedFunds;
   }
 
-  async getUnderlyingTokenAddresses() {
-    return this.underlyingTokenAddress;
+  async getUnderlyingTokenDefinitions() {
+    return [{ address: this.underlyingTokenAddress, network: this.network }];
   }
 
   async getPricePerShare({ contract }: GetPricePerShareParams<DhedgeV2Token>) {
@@ -47,19 +47,11 @@ export abstract class DhedgeV2PoolTokenFetcher extends AppTokenTemplatePositionF
       if (isMulticallUnderlyingError(err)) return 0;
       throw err;
     });
-    return Number(pricePerShareRaw) / 10 ** 18;
-  }
-
-  async getLiquidity({ appToken }: GetDataPropsParams<DhedgeV2Token>) {
-    return appToken.supply * appToken.price;
+    return [Number(pricePerShareRaw) / 10 ** 18];
   }
 
   async getReserves(_params: GetDataPropsParams<DhedgeV2Token>) {
     return [0]; // TBD
-  }
-
-  async getApy(_params: GetDataPropsParams<DhedgeV2Token>) {
-    return 0;
   }
 
   async getLabel({ contract }: GetDisplayPropsParams<DhedgeV2Token>) {

@@ -4,7 +4,13 @@
 export { AbracadabraBentoBoxTokenContract__factory } from './AbracadabraBentoBoxTokenContract__factory';
 export { AbracadabraCauldron__factory } from './AbracadabraCauldron__factory';
 export { AbracadabraConvexWrapper__factory } from './AbracadabraConvexWrapper__factory';
+export { AbracadabraGlpWrapper__factory } from './AbracadabraGlpWrapper__factory';
+export { AbracadabraGmxSGlp__factory } from './AbracadabraGmxSGlp__factory';
+export { AbracadabraMagicApe__factory } from './AbracadabraMagicApe__factory';
+export { AbracadabraMagicApeLens__factory } from './AbracadabraMagicApeLens__factory';
+export { AbracadabraMagicGlpHarvestor__factory } from './AbracadabraMagicGlpHarvestor__factory';
 export { AbracadabraMspell__factory } from './AbracadabraMspell__factory';
 export { AbracadabraStakedSpell__factory } from './AbracadabraStakedSpell__factory';
+export { GmxRewardTracker__factory } from './GmxRewardTracker__factory';
 export { PopsicleChef__factory } from './PopsicleChef__factory';
 export { SushiswapBentobox__factory } from './SushiswapBentobox__factory';

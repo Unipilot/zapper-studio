@@ -3,7 +3,7 @@ import { Inject } from '@nestjs/common';
 import { IAppToolkit, APP_TOOLKIT } from '~app-toolkit/app-toolkit.interface';
 import { PositionTemplate } from '~app-toolkit/decorators/position-template.decorator';
 import { AppTokenTemplatePositionFetcher } from '~position/template/app-token.template.position-fetcher';
-import { GetUnderlyingTokensParams, GetDataPropsParams } from '~position/template/app-token.template.types';
+import { GetUnderlyingTokensParams } from '~position/template/app-token.template.types';
 
 import { StargateAa, StargateContractFactory } from '../contracts';
 
@@ -26,23 +26,11 @@ export class EthereumStargateAuctionLockedTokenFetcher extends AppTokenTemplateP
     return ['0x4dfcad285ef39fed84e77edf1b7dbc442565e55e'];
   }
 
-  getUnderlyingTokenAddresses({ contract }: GetUnderlyingTokensParams<StargateAa>) {
-    return contract.stargateToken();
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<StargateAa>) {
+    return [{ address: await contract.stargateToken(), network: this.network }];
   }
 
-  async getPricePerShare(): Promise<number | number[]> {
-    return 4; // 1 aaSTG = 4 STG
-  }
-
-  async getLiquidity({ appToken }: GetDataPropsParams<StargateAa>) {
-    return appToken.supply * appToken.price;
-  }
-
-  async getReserves({ appToken }: GetDataPropsParams<StargateAa>) {
-    return [appToken.pricePerShare[0] * appToken.supply];
-  }
-
-  async getApy() {
-    return 0;
+  async getPricePerShare() {
+    return [4]; // 1 aaSTG = 4 STG
   }
 }

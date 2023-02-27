@@ -6,7 +6,6 @@ import { PositionTemplate } from '~app-toolkit/decorators/position-template.deco
 import { AppTokenTemplatePositionFetcher } from '~position/template/app-token.template.position-fetcher';
 import {
   DefaultAppTokenDefinition,
-  GetDataPropsParams,
   DefaultAppTokenDataProps,
   GetUnderlyingTokensParams,
   GetPricePerShareParams,
@@ -36,9 +35,10 @@ export class EthereumBancorV3BntPoolTokenFetcher extends AppTokenTemplatePositio
     return [this.bntPoolTokenAddress];
   }
 
-  async getUnderlyingTokenAddresses({ contract }: GetUnderlyingTokensParams<PoolToken, DefaultAppTokenDefinition>) {
-    const underlyingTokenAddress = await contract.reserveToken();
-    return underlyingTokenAddress.toLowerCase().replace(ETH_ADDR_ALIAS, ZERO_ADDRESS);
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<PoolToken, DefaultAppTokenDefinition>) {
+    const underlyingTokenAddressRaw = await contract.reserveToken();
+    const underlyingTokenAddress = underlyingTokenAddressRaw.toLowerCase().replace(ETH_ADDR_ALIAS, ZERO_ADDRESS);
+    return [{ address: underlyingTokenAddress, network: this.network }];
   }
 
   async getPricePerShare({
@@ -53,18 +53,8 @@ export class EthereumBancorV3BntPoolTokenFetcher extends AppTokenTemplatePositio
     const ratioRaw = await multicall
       .wrap(bntPoolContract)
       .poolTokenToUnderlying((10 ** appToken.tokens[0].decimals).toString());
-    return Number(ratioRaw) / 10 ** appToken.tokens[0].decimals;
-  }
+    const ratio = Number(ratioRaw) / 10 ** appToken.tokens[0].decimals;
 
-  getLiquidity({ appToken }: GetDataPropsParams<PoolToken>) {
-    return appToken.supply * appToken.price;
-  }
-
-  getReserves({ appToken }: GetDataPropsParams<PoolToken>) {
-    return [appToken.pricePerShare[0] * appToken.supply];
-  }
-
-  getApy(_params: GetDataPropsParams<PoolToken>) {
-    return 0;
+    return [ratio];
   }
 }

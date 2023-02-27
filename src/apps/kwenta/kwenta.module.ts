@@ -1,18 +1,19 @@
-import { Register } from '~app-toolkit/decorators';
+import { Module } from '@nestjs/common';
+
 import { AbstractApp } from '~app/app.dynamic-module';
 
-import { KwentaContractFactory } from './contracts';
-import { KwentaAppDefinition, KWENTA_DEFINITION } from './kwenta.definition';
-import { OptimismKwentaCrossContractPositionFetcher } from './optimism/kwenta.cross.contract-position-fetcher';
-import { OptimismKwentaIsolatedContractPositionFetcher } from './optimism/kwenta.isolated.contract-position-fetcher';
+import { SynthetixContractFactory } from '../synthetix/contracts';
 
-@Register.AppModule({
-  appId: KWENTA_DEFINITION.id,
+import { KwentaContractFactory } from './contracts';
+import { OptimismKwentaPerpV1CrossMarginContractPositionFetcher } from './optimism/kwenta.perp-v1-cross-margin.contract-position-fetcher';
+import { OptimismKwentaStakingContractPositionFetcher } from './optimism/kwenta.staking.contract-position-fetcher';
+
+@Module({
   providers: [
-    KwentaAppDefinition,
     KwentaContractFactory,
-    OptimismKwentaIsolatedContractPositionFetcher,
-    OptimismKwentaCrossContractPositionFetcher,
+    SynthetixContractFactory,
+    OptimismKwentaPerpV1CrossMarginContractPositionFetcher,
+    OptimismKwentaStakingContractPositionFetcher,
   ],
 })
-export class KwentaAppModule extends AbstractApp() {}
+export class KwentaAppModule extends AbstractApp() { }

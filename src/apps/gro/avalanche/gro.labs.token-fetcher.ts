@@ -4,11 +4,7 @@ import 'moment-duration-format';
 import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { PositionTemplate } from '~app-toolkit/decorators/position-template.decorator';
 import { AppTokenTemplatePositionFetcher } from '~position/template/app-token.template.position-fetcher';
-import {
-  GetDataPropsParams,
-  GetPricePerShareParams,
-  GetUnderlyingTokensParams,
-} from '~position/template/app-token.template.types';
+import { GetPricePerShareParams, GetUnderlyingTokensParams } from '~position/template/app-token.template.types';
 
 import { GroContractFactory, GroLabsVault } from '../contracts';
 
@@ -35,24 +31,12 @@ export class AvalancheGroLabsTokenFetcher extends AppTokenTemplatePositionFetche
     ];
   }
 
-  async getUnderlyingTokenAddresses({ contract }: GetUnderlyingTokensParams<GroLabsVault>) {
-    return contract.token();
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<GroLabsVault>) {
+    return [{ address: await contract.token(), network: this.network }];
   }
 
   async getPricePerShare({ contract }: GetPricePerShareParams<GroLabsVault>) {
     const pricePerShareRaw = await contract.getPricePerShare();
-    return Number(pricePerShareRaw) / 10 ** 18;
-  }
-
-  async getLiquidity({ appToken }: GetDataPropsParams<GroLabsVault>) {
-    return appToken.price * appToken.supply;
-  }
-
-  async getReserves({ appToken }: GetDataPropsParams<GroLabsVault>) {
-    return [appToken.pricePerShare[0] * appToken.supply];
-  }
-
-  async getApy(_params: GetDataPropsParams<GroLabsVault>) {
-    return 0;
+    return [Number(pricePerShareRaw) / 10 ** 18];
   }
 }

@@ -65,8 +65,11 @@ export abstract class UniswapV2PoolOnChainTemplateTokenFetcher<
     return compact(poolAddresses);
   }
 
-  async getUnderlyingTokenAddresses({ contract }: GetUnderlyingTokensParams<T>) {
-    return Promise.all([this.getPoolToken0(contract), this.getPoolToken1(contract)]);
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<T>) {
+    return [
+      { address: await this.getPoolToken0(contract), network: this.network },
+      { address: await this.getPoolToken1(contract), network: this.network },
+    ];
   }
 
   async getPricePerShare({ appToken, contract }: GetPricePerShareParams<T, UniswapV2TokenDataProps>) {
@@ -75,18 +78,6 @@ export abstract class UniswapV2PoolOnChainTemplateTokenFetcher<
     const reserves = [Number(reserve0) / 10 ** token0.decimals, Number(reserve1) / 10 ** token1.decimals];
     const pricePerShare = reserves.map(r => r / appToken.supply);
     return pricePerShare;
-  }
-
-  async getLiquidity({ appToken }: GetDataPropsParams<T>) {
-    return appToken.supply * appToken.price;
-  }
-
-  async getReserves({ appToken }: GetDataPropsParams<T>) {
-    return (appToken.pricePerShare as number[]).map(v => v * appToken.supply);
-  }
-
-  async getApy(_params: GetDataPropsParams<T, UniswapV2TokenDataProps>) {
-    return 0;
   }
 
   async getDataProps(params: GetDataPropsParams<T, UniswapV2TokenDataProps>) {

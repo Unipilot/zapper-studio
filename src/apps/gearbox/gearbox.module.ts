@@ -1,12 +1,18 @@
-import { Register } from '~app-toolkit/decorators';
+import { Module } from '@nestjs/common';
+
 import { AbstractApp } from '~app/app.dynamic-module';
 
 import { GearboxContractFactory } from './contracts';
+import { EthereumGearboxCreditAccountsContractPositionFetcher } from './ethereum/gearbox.credit-accounts.contract-position-fetcher';
 import { EthereumGearboxLendingTokenFetcher } from './ethereum/gearbox.lending.token-fetcher';
-import { GearboxAppDefinition, GEARBOX_DEFINITION } from './gearbox.definition';
+import { EthereumGearboxPhantomTokenFetcher } from './ethereum/gearbox.phantom.token-fetcher';
 
-@Register.AppModule({
-  appId: GEARBOX_DEFINITION.id,
-  providers: [EthereumGearboxLendingTokenFetcher, GearboxAppDefinition, GearboxContractFactory],
+@Module({
+  providers: [
+    GearboxContractFactory,
+    EthereumGearboxCreditAccountsContractPositionFetcher,
+    EthereumGearboxLendingTokenFetcher,
+    EthereumGearboxPhantomTokenFetcher,
+  ],
 })
 export class GearboxAppModule extends AbstractApp() {}

@@ -8,8 +8,8 @@ import {
   GetAddressesParams,
   GetDisplayPropsParams,
   GetPricePerShareParams,
+  GetUnderlyingTokensParams,
 } from '~position/template/app-token.template.types';
-import { GetUnderlyingTokensParams, GetDataPropsParams } from '~position/template/app-token.template.types';
 
 import { PoolTogetherV3ContractFactory, PoolTogetherV3Pod } from '../contracts';
 
@@ -48,25 +48,11 @@ export abstract class PoolTogetherV3PodTokenFetcher extends AppTokenTemplatePosi
 
   async getPricePerShare({ contract, appToken }: GetPricePerShareParams<PoolTogetherV3Pod>) {
     const pricePerShareRaw = await contract.getPricePerShare();
-    return Number(pricePerShareRaw) / 10 ** appToken.decimals;
+    const pricePerShare = Number(pricePerShareRaw) / 10 ** appToken.decimals;
+    return [pricePerShare];
   }
 
-  async getUnderlyingTokenAddresses({
-    contract,
-  }: GetUnderlyingTokensParams<PoolTogetherV3Pod, PoolTogetherV3PodDefinition>): Promise<string | string[]> {
-    const underlyingTokenAddress = await contract.token().then(addr => addr.toLowerCase());
-    return [underlyingTokenAddress];
-  }
-
-  getLiquidity({ appToken }: GetDataPropsParams<PoolTogetherV3Pod>) {
-    return appToken.supply * appToken.price;
-  }
-
-  getReserves({ appToken }: GetDataPropsParams<PoolTogetherV3Pod>) {
-    return [appToken.pricePerShare[0] * appToken.supply];
-  }
-
-  getApy(_params: GetDataPropsParams<PoolTogetherV3Pod>) {
-    return 0;
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<PoolTogetherV3Pod>) {
+    return [{ address: await contract.token(), network: this.network }];
   }
 }

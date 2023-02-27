@@ -1,24 +1,36 @@
-import { Register } from '~app-toolkit/decorators';
-import { AbstractApp } from '~app/app.dynamic-module';
-import { MuxMlpTokenHelper } from '~apps/mux/helpers/mux.mlp.token-helper';
+import { Module } from '@nestjs/common';
 
+import { AbstractApp } from '~app/app.dynamic-module';
+
+import { ArbitrumMuxFarmContractPositionFetcher } from './arbitrum/mux.farm.contract-position-fetcher';
 import { ArbitrumMuxMlpTokenFetcher } from './arbitrum/mux.mlp.token-fetcher';
+import { ArbitrumMuxMuxTokenFetcher } from './arbitrum/mux.mux.token-fetcher';
+import { ArbitrumMuxPerpContractPositionFetcher } from './arbitrum/mux.perp.contract-position-fetcher';
 import { AvalancheMuxMlpTokenFetcher } from './avalanche/mux.mlp.token-fetcher';
+import { AvalancheMuxPerpContractPositionFetcher } from './avalanche/mux.perp.contract-position-fetcher';
 import { BinanceSmartChainMuxMlpTokenFetcher } from './binance-smart-chain/mux.mlp.token-fetcher';
+import { BinanceSmartChainMuxPerpContractPositionFetcher } from './binance-smart-chain/mux.perp.contract-position-fetcher';
 import { MuxContractFactory } from './contracts';
 import { FantomMuxMlpTokenFetcher } from './fantom/mux.mlp.token-fetcher';
-import { MuxAppDefinition, MUX_DEFINITION } from './mux.definition';
+import { FantomMuxPerpContractPositionFetcher } from './fantom/mux.perp.contract-position-fetcher';
 
-@Register.AppModule({
-  appId: MUX_DEFINITION.id,
+@Module({
   providers: [
-    ArbitrumMuxMlpTokenFetcher,
-    AvalancheMuxMlpTokenFetcher,
-    BinanceSmartChainMuxMlpTokenFetcher,
-    FantomMuxMlpTokenFetcher,
-    MuxAppDefinition,
     MuxContractFactory,
-    MuxMlpTokenHelper,
+    // Arbitrum
+    ArbitrumMuxFarmContractPositionFetcher,
+    ArbitrumMuxPerpContractPositionFetcher,
+    ArbitrumMuxMlpTokenFetcher,
+    ArbitrumMuxMuxTokenFetcher,
+    // Avalanche
+    AvalancheMuxPerpContractPositionFetcher,
+    AvalancheMuxMlpTokenFetcher,
+    // Binance-smart-chain
+    BinanceSmartChainMuxPerpContractPositionFetcher,
+    BinanceSmartChainMuxMlpTokenFetcher,
+    // Fantom
+    FantomMuxPerpContractPositionFetcher,
+    FantomMuxMlpTokenFetcher,
   ],
 })
 export class MuxAppModule extends AbstractApp() {}

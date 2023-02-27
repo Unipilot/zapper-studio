@@ -7,8 +7,12 @@ import { getLabelFromToken } from '~app-toolkit/helpers/presentation/image.prese
 import { DisplayProps } from '~position/display.interface';
 import { MetaType } from '~position/position.interface';
 import { ContractPositionTemplatePositionFetcher } from '~position/template/contract-position.template.position-fetcher';
-import { GetDisplayPropsParams, GetTokenBalancesParams } from '~position/template/contract-position.template.types';
-import { GetDefinitionsParams, GetTokenDefinitionsParams } from '~position/template/contract-position.template.types';
+import {
+  GetDisplayPropsParams,
+  GetTokenBalancesParams,
+  GetDefinitionsParams,
+  GetTokenDefinitionsParams,
+} from '~position/template/contract-position.template.types';
 
 import { ImpermaxContractFactory, Borrowable } from '../contracts';
 
@@ -45,7 +49,13 @@ export abstract class ImpermaxBorrowContractPositionFetcher extends ContractPosi
 
   async getTokenDefinitions({ contract }: GetTokenDefinitionsParams<Borrowable>) {
     const underlyingAddress = await contract.underlying();
-    return [{ address: underlyingAddress, metaType: MetaType.BORROWED }];
+    return [
+      {
+        metaType: MetaType.BORROWED,
+        address: underlyingAddress,
+        network: this.network,
+      },
+    ];
   }
 
   async getLabel({ contractPosition }: GetDisplayPropsParams<Borrowable>): Promise<DisplayProps['label']> {

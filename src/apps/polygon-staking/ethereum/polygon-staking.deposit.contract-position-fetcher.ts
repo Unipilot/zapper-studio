@@ -3,21 +3,22 @@ import axios from 'axios';
 import { gql } from 'graphql-request';
 import { compact, sumBy } from 'lodash';
 
-import { drillBalance } from '~app-toolkit';
 import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { PositionTemplate } from '~app-toolkit/decorators/position-template.decorator';
+import { drillBalance } from '~app-toolkit/helpers/drill-balance.helper';
 import { getImagesFromToken, getLabelFromToken } from '~app-toolkit/helpers/presentation/image.present';
+import { gqlFetchAll } from '~app-toolkit/helpers/the-graph.helper';
 import { CacheOnInterval } from '~cache/cache-on-interval.decorator';
 import { ContractPositionBalance } from '~position/position-balance.interface';
-import { ContractPosition, MetaType } from '~position/position.interface';
+import { MetaType } from '~position/position.interface';
 import { isClaimable, isSupplied } from '~position/position.utils';
-import { ContractPositionTemplatePositionFetcher } from '~position/template/contract-position.template.position-fetcher';
 import {
   GetTokenDefinitionsParams,
   GetDisplayPropsParams,
   GetTokenBalancesParams,
   GetDataPropsParams,
 } from '~position/template/contract-position.template.types';
+import { CustomContractPositionTemplatePositionFetcher } from '~position/template/custom-contract-position.template.position-fetcher';
 
 import { PolygonStakingContractFactory } from '../contracts';
 import { PolygonStakeManager } from '../contracts/ethers/PolygonStakeManager';
@@ -78,10 +79,11 @@ type PolygonStakingDepositDataProps = {
   validatorId: number;
   validatorName: string;
   validatorShareAddress: string;
+  positionKey: string;
 };
 
 @PositionTemplate()
-export class EthereumPolygonStakingContractPositionFetcher extends ContractPositionTemplatePositionFetcher<
+export class EthereumPolygonStakingContractPositionFetcher extends CustomContractPositionTemplatePositionFetcher<
   PolygonStakeManager,
   PolygonStakingDepositDataProps,
   PolygonStakingDepositDefinition
@@ -98,6 +100,7 @@ export class EthereumPolygonStakingContractPositionFetcher extends ContractPosit
   @CacheOnInterval({
     key: `studio:polygon-staking:deposit:ethereum:validators`,
     timeout: 15 * 60 * 1000,
+    failOnMissingData: false,
   })
   async getValidators() {
     const url = `https://sentinel.matic.network/api/v2/validators?limit=1000`;
@@ -122,8 +125,17 @@ export class EthereumPolygonStakingContractPositionFetcher extends ContractPosit
 
   async getTokenDefinitions(_params: GetTokenDefinitionsParams<PolygonStakeManager>) {
     return [
-      { metaType: MetaType.SUPPLIED, address: '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0' },
-      { metaType: MetaType.CLAIMABLE, address: '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0' },
+      {
+        metaType: MetaType.SUPPLIED,
+        address: '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0',
+        network: this.network,
+      },
+
+      {
+        metaType: MetaType.CLAIMABLE,
+        address: '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0',
+        network: this.network,
+      },
     ];
   }
 
@@ -134,6 +146,7 @@ export class EthereumPolygonStakingContractPositionFetcher extends ContractPosit
       validatorId: definition.validatorId,
       validatorName: definition.validatorName,
       validatorShareAddress: definition.validatorShareAddress,
+      positionKey: `${definition.validatorId}`,
     };
   }
 
@@ -146,10 +159,6 @@ export class EthereumPolygonStakingContractPositionFetcher extends ContractPosit
     return getImagesFromToken(contractPosition.tokens[0]);
   }
 
-  getKey({ contractPosition }: { contractPosition: ContractPosition<PolygonStakingDepositDataProps> }) {
-    return this.appToolkit.getPositionKey(contractPosition, ['validatorId']);
-  }
-
   // @ts-ignore
   async getTokenBalancesPerPosition(_params: GetTokenBalancesParams<PolygonStakeManager>) {
     throw new Error('Method not implemented.');
@@ -158,7 +167,7 @@ export class EthereumPolygonStakingContractPositionFetcher extends ContractPosit
   async getBalances(address: string): Promise<ContractPositionBalance<PolygonStakingDepositDataProps>[]> {
     const multicall = this.appToolkit.getMulticall(this.network);
 
-    const data = await this.appToolkit.helpers.theGraphHelper.gqlFetchAll<DelegatedMaticResponse>({
+    const data = await gqlFetchAll<DelegatedMaticResponse>({
       endpoint: GQL_ENDPOINT,
       query: DELEGATED_MATIC_QUERY,
       dataToSearch: 'delegators',

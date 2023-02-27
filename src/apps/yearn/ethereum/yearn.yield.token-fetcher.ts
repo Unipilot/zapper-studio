@@ -4,11 +4,7 @@ import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { PositionTemplate } from '~app-toolkit/decorators/position-template.decorator';
 import { isMulticallUnderlyingError } from '~multicall/multicall.ethers';
 import { AppTokenTemplatePositionFetcher } from '~position/template/app-token.template.position-fetcher';
-import {
-  GetUnderlyingTokensParams,
-  GetPricePerShareParams,
-  GetDataPropsParams,
-} from '~position/template/app-token.template.types';
+import { GetUnderlyingTokensParams, GetPricePerShareParams } from '~position/template/app-token.template.types';
 
 import { YearnContractFactory, YearnVault } from '../contracts';
 
@@ -34,31 +30,19 @@ export class EthereumYearnYieldTokenFetcher extends AppTokenTemplatePositionFetc
     return Y_TOKENS.map(yToken => yToken.address);
   }
 
-  async getUnderlyingTokenAddresses({ contract }: GetUnderlyingTokensParams<YearnVault>): Promise<string[]> {
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<YearnVault>) {
     const match = Y_TOKENS.find(yToken => yToken.address === contract.address.toLowerCase());
     if (!match) throw new Error('Cannot find specified Y token');
-    return [match.underlyingAddress];
+    return [{ address: match.underlyingAddress, network: this.network }];
   }
 
-  async getPricePerShare({ contract }: GetPricePerShareParams<YearnVault>): Promise<number> {
+  async getPricePerShare({ contract }: GetPricePerShareParams<YearnVault>) {
     return contract
       .getPricePerFullShare()
       .catch(err => {
         if (isMulticallUnderlyingError(err)) return 0;
         throw err;
       })
-      .then(pps => Number(pps) / 10 ** 18);
-  }
-
-  async getLiquidity({ appToken }: GetDataPropsParams<YearnVault>) {
-    return appToken.supply * appToken.price;
-  }
-
-  async getReserves({ appToken }: GetDataPropsParams<YearnVault>) {
-    return [appToken.pricePerShare[0] * appToken.supply];
-  }
-
-  async getApy(_params: GetDataPropsParams<YearnVault>) {
-    return 0;
+      .then(pps => [Number(pps) / 10 ** 18]);
   }
 }

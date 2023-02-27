@@ -4,14 +4,15 @@ import { compact, range } from 'lodash';
 
 import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { getLabelFromToken } from '~app-toolkit/helpers/presentation/image.present';
+import { gqlFetch } from '~app-toolkit/helpers/the-graph.helper';
 import { ContractPositionBalance } from '~position/position-balance.interface';
-import { ContractPosition, MetaType, Standard } from '~position/position.interface';
-import { ContractPositionTemplatePositionFetcher } from '~position/template/contract-position.template.position-fetcher';
+import { MetaType, Standard } from '~position/position.interface';
 import {
   GetDataPropsParams,
   GetDisplayPropsParams,
   GetTokenDefinitionsParams,
 } from '~position/template/contract-position.template.types';
+import { CustomContractPositionTemplatePositionFetcher } from '~position/template/custom-contract-position.template.position-fetcher';
 
 import { KyberswapElasticContractFactory, PositionManager } from '../contracts';
 
@@ -28,6 +29,7 @@ export type KyberswapElasticLiquidityPositionDataProps = {
   rangeStart?: number;
   rangeEnd?: number;
   apy?: number;
+  positionKey: string;
 };
 
 export type KyberswapElasticLiquidityPositionDefinition = {
@@ -51,7 +53,7 @@ type GetTopPoolsResponse = {
   }[];
 };
 
-export abstract class KyberswapElasticLiquidityContractPositionFetcher extends ContractPositionTemplatePositionFetcher<
+export abstract class KyberswapElasticLiquidityContractPositionFetcher extends CustomContractPositionTemplatePositionFetcher<
   PositionManager,
   KyberswapElasticLiquidityPositionDataProps,
   KyberswapElasticLiquidityPositionDefinition
@@ -85,7 +87,7 @@ export abstract class KyberswapElasticLiquidityContractPositionFetcher extends C
       blockSubgraphUrl: this.blockSubgraphUrl,
     });
 
-    const data = await this.appToolkit.helpers.theGraphHelper.requestGraph<GetTopPoolsResponse>({
+    const data = await gqlFetch<GetTopPoolsResponse>({
       endpoint: this.subgraphUrl,
       query: GET_TOP_POOLS_QUERY,
     });
@@ -103,8 +105,16 @@ export abstract class KyberswapElasticLiquidityContractPositionFetcher extends C
     definition,
   }: GetTokenDefinitionsParams<PositionManager, KyberswapElasticLiquidityPositionDefinition>) {
     return [
-      { metaType: MetaType.SUPPLIED, address: definition.token0Address },
-      { metaType: MetaType.SUPPLIED, address: definition.token1Address },
+      {
+        metaType: MetaType.SUPPLIED,
+        address: definition.token0Address,
+        network: this.network,
+      },
+      {
+        metaType: MetaType.SUPPLIED,
+        address: definition.token1Address,
+        network: this.network,
+      },
     ];
   }
 
@@ -131,7 +141,7 @@ export abstract class KyberswapElasticLiquidityContractPositionFetcher extends C
     const assetStandard = Standard.ERC_721;
     const apy = await this.apyDataLoader.load(poolAddress);
 
-    return { feeTier, reserves, liquidity, poolAddress, assetStandard, apy };
+    return { feeTier, reserves, liquidity, poolAddress, assetStandard, apy, positionKey: `${feeTier}` };
   }
 
   async getLabel({
@@ -145,10 +155,6 @@ export abstract class KyberswapElasticLiquidityContractPositionFetcher extends C
     const symbolLabel = contractPosition.tokens.map(t => getLabelFromToken(t)).join(' / ');
     const label = `${symbolLabel} (${definition.feeTier.toFixed(4)}%)`;
     return label;
-  }
-
-  getKey({ contractPosition }: { contractPosition: ContractPosition<KyberswapElasticLiquidityPositionDataProps> }) {
-    return this.appToolkit.getPositionKey(contractPosition, ['feeTier']);
   }
 
   // @ts-ignore

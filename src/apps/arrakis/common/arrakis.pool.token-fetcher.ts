@@ -58,10 +58,13 @@ export abstract class ArrakisPoolTokenFetcher extends AppTokenTemplatePositionFe
     return definitions.map(v => v.address);
   }
 
-  async getUnderlyingTokenAddresses({
+  async getUnderlyingTokenDefinitions({
     definition,
   }: GetUnderlyingTokensParams<ArrakisGelatoPool, ArrakisPoolDefinition>) {
-    return [definition.underlyingTokenAddress0, definition.underlyingTokenAddress1];
+    return [
+      { address: definition.underlyingTokenAddress0, network: this.network },
+      { address: definition.underlyingTokenAddress1, network: this.network },
+    ];
   }
 
   async getPricePerShare({
@@ -86,22 +89,6 @@ export abstract class ArrakisPoolTokenFetcher extends AppTokenTemplatePositionFe
     const { liquidity, reserves } = appToken.dataProps;
     const reservePercentages = appToken.tokens.map((t, i) => reserves[i] * (t.price / liquidity));
     return reservePercentages.map(p => `${Math.round(p * 100)}%`).join(' / ');
-  }
-
-  async getReserves({
-    appToken,
-  }: GetDataPropsParams<ArrakisGelatoPool, ArrakisPoolTokenDataProps, ArrakisPoolDefinition>) {
-    return (appToken.pricePerShare as number[]).map(v => v * appToken.supply);
-  }
-
-  async getLiquidity({
-    appToken,
-  }: GetDataPropsParams<ArrakisGelatoPool, ArrakisPoolTokenDataProps, ArrakisPoolDefinition>) {
-    return appToken.price * appToken.supply;
-  }
-
-  getApy(_params: GetDataPropsParams<ArrakisGelatoPool, ArrakisPoolTokenDataProps, ArrakisPoolDefinition>) {
-    return 0;
   }
 
   async getFee({

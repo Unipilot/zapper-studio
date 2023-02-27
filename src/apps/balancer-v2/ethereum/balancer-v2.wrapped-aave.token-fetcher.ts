@@ -3,7 +3,7 @@ import { Inject } from '@nestjs/common';
 import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { PositionTemplate } from '~app-toolkit/decorators/position-template.decorator';
 import { AppTokenTemplatePositionFetcher } from '~position/template/app-token.template.position-fetcher';
-import { GetDataPropsParams, GetUnderlyingTokensParams } from '~position/template/app-token.template.types';
+import { GetUnderlyingTokensParams } from '~position/template/app-token.template.types';
 
 import { BalancerV2ContractFactory, BalancerWrappedAaveToken } from '../contracts';
 
@@ -33,19 +33,11 @@ export class EthereumBalancerV2WrappedAaveTokenFetcher extends AppTokenTemplateP
     return this.contractFactory.balancerWrappedAaveToken({ address, network: this.network });
   }
 
-  getUnderlyingTokenAddresses({ contract }: GetUnderlyingTokensParams<BalancerWrappedAaveToken>) {
-    return contract.callStatic.ATOKEN();
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<BalancerWrappedAaveToken>) {
+    return [{ address: await contract.callStatic.ATOKEN(), network: this.network }];
   }
 
-  getLiquidity({ appToken }: GetDataPropsParams<BalancerWrappedAaveToken>) {
-    return appToken.supply * appToken.price;
-  }
-
-  getReserves({ appToken }: GetDataPropsParams<BalancerWrappedAaveToken>) {
-    return [appToken.pricePerShare[0] * appToken.supply];
-  }
-
-  getApy() {
-    return 0;
+  async getPricePerShare() {
+    return [1];
   }
 }

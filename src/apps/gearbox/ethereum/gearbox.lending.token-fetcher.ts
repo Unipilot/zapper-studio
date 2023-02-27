@@ -74,10 +74,6 @@ export class EthereumGearboxLendingTokenFetcher extends AppTokenTemplatePosition
     return this.gearboxContractFactory.dieselToken({ address, network });
   }
 
-  async getApy() {
-    return 0;
-  }
-
   async getLiquidity(
     params: GetDataPropsParams<DieselToken, DefaultAppTokenDataProps, GearboxLendingDefinition>,
   ): Promise<number> {
@@ -90,17 +86,20 @@ export class EthereumGearboxLendingTokenFetcher extends AppTokenTemplatePosition
     const underlyingTokenDecimals = await this.gearboxContractFactory
       .erc20({ address: underlyingToken, network })
       .decimals();
-    return +formatUnits(liquidity, underlyingTokenDecimals);
+    const underlyingBalance = +formatUnits(liquidity, underlyingTokenDecimals);
+
+    return underlyingBalance * params.appToken.tokens[0].price;
   }
 
-  getReserves(
-    _: GetDataPropsParams<DieselToken, DefaultAppTokenDataProps, DefaultAppTokenDefinition>,
-  ): number[] | Promise<number[]> {
+  async getReserves(_: GetDataPropsParams<DieselToken, DefaultAppTokenDataProps, DefaultAppTokenDefinition>) {
     return [];
   }
 
-  async getUnderlyingTokenAddresses({ definition }: GetUnderlyingTokensParams<DieselToken, GearboxLendingDefinition>) {
-    return this._getPoolContract(definition).underlyingToken();
+  async getUnderlyingTokenDefinitions({
+    definition,
+  }: GetUnderlyingTokensParams<DieselToken, GearboxLendingDefinition>) {
+    const underlyingTokenAddress = await this._getPoolContract(definition).underlyingToken();
+    return [{ address: underlyingTokenAddress, network: this.network }];
   }
 
   async getPricePerShare({
@@ -119,9 +118,9 @@ export class EthereumGearboxLendingTokenFetcher extends AppTokenTemplatePosition
 
     const underlyingTokenContract = this.gearboxContractFactory.erc20({ address: underlyingToken, network });
     const underlyingTokenDecimals = await underlyingTokenContract.decimals();
+    const pricePerShare =
+      +formatUnits(underlying, underlyingTokenDecimals) / +formatUnits(dieselTokenTotalSupply, dieselTokenDecimals);
 
-    return (
-      +formatUnits(underlying, underlyingTokenDecimals) / +formatUnits(dieselTokenTotalSupply, dieselTokenDecimals)
-    );
+    return [pricePerShare];
   }
 }

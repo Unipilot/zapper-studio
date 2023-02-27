@@ -6,6 +6,7 @@ import { gql } from 'graphql-request';
 import { IAppToolkit, APP_TOOLKIT } from '~app-toolkit/app-toolkit.interface';
 import { ZERO_ADDRESS } from '~app-toolkit/constants/address';
 import { getLabelFromToken } from '~app-toolkit/helpers/presentation/image.present';
+import { gqlFetch } from '~app-toolkit/helpers/the-graph.helper';
 import { DefaultDataProps } from '~position/display.interface';
 import { MetaType } from '~position/position.interface';
 import { isSupplied } from '~position/position.utils';
@@ -61,9 +62,21 @@ export abstract class SynthetixLoanContractPositionFetcher extends ContractPosit
 
   async getTokenDefinitions() {
     return [
-      { metaType: MetaType.SUPPLIED, address: ZERO_ADDRESS },
-      { metaType: MetaType.BORROWED, address: this.sUSDAddress },
-      { metaType: MetaType.BORROWED, address: this.sETHAddress },
+      {
+        metaType: MetaType.SUPPLIED,
+        address: ZERO_ADDRESS,
+        network: this.network,
+      },
+      {
+        metaType: MetaType.BORROWED,
+        address: this.sUSDAddress,
+        network: this.network,
+      },
+      {
+        metaType: MetaType.BORROWED,
+        address: this.sETHAddress,
+        network: this.network,
+      },
     ];
   }
 
@@ -75,7 +88,7 @@ export abstract class SynthetixLoanContractPositionFetcher extends ContractPosit
     address,
     contractPosition,
   }: GetTokenBalancesParams<SynthetixLoan, DefaultDataProps>): Promise<BigNumberish[]> {
-    const loansFromSubgraph = await this.appToolkit.helpers.theGraphHelper.requestGraph<GetLoans>({
+    const loansFromSubgraph = await gqlFetch<GetLoans>({
       endpoint: this.subgraphUrl,
       query: getLoanQuery,
       variables: { address: address },

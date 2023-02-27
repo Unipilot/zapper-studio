@@ -4,10 +4,10 @@ import { gql } from 'graphql-request';
 
 import { IAppToolkit, APP_TOOLKIT } from '~app-toolkit/app-toolkit.interface';
 import { PositionTemplate } from '~app-toolkit/decorators/position-template.decorator';
+import { gqlFetch } from '~app-toolkit/helpers/the-graph.helper';
 import { AppTokenTemplatePositionFetcher } from '~position/template/app-token.template.position-fetcher';
 import {
   DefaultAppTokenDefinition,
-  GetDataPropsParams,
   DefaultAppTokenDataProps,
   GetAddressesParams,
   GetPricePerShareParams,
@@ -73,8 +73,8 @@ export class OptimismLyraAvalonPoolTokenFetcher extends AppTokenTemplatePosition
       network: this.network,
     });
 
-    const marketsResponse = await this.appToolkit.helpers.theGraphHelper.requestGraph<QueryResponse>({
-      endpoint: 'https://subgraph.satsuma-prod.com/lyra/optimism-mainnet/api',
+    const marketsResponse = await gqlFetch<QueryResponse>({
+      endpoint: 'https://api.lyra.finance/subgraph/optimism/v1/api',
       query: QUERY,
     });
 
@@ -85,8 +85,8 @@ export class OptimismLyraAvalonPoolTokenFetcher extends AppTokenTemplatePosition
     return markets.map(market => market.liquidityTokens);
   }
 
-  async getUnderlyingTokenAddresses() {
-    return ['0x8c6f28f2f1a3c87f0f938b96d27520d9751ec8d9']; // sUSD
+  async getUnderlyingTokenDefinitions() {
+    return [{ address: '0x8c6f28f2f1a3c87f0f938b96d27520d9751ec8d9', network: this.network }];
   }
 
   async getPricePerShare({
@@ -96,19 +96,8 @@ export class OptimismLyraAvalonPoolTokenFetcher extends AppTokenTemplatePosition
   }: GetPricePerShareParams<LyraLiquidityToken, DefaultAppTokenDataProps, DefaultAppTokenDefinition>) {
     const pool = await contract.liquidityPool();
     const poolContract = this.contractFactory.lyraLiquidityPool({ address: pool, network: this.network });
-    const ratio = await multicall.wrap(poolContract).getTokenPrice();
-    return Number(ratio) / 10 ** appToken.tokens[0].decimals;
-  }
-
-  async getLiquidity({ appToken }: GetDataPropsParams<LyraLiquidityToken>) {
-    return appToken.supply * appToken.price;
-  }
-
-  async getReserves({ appToken }: GetDataPropsParams<LyraLiquidityToken>) {
-    return [appToken.pricePerShare[0] * appToken.supply];
-  }
-
-  async getApy(_params: GetDataPropsParams<LyraLiquidityToken>) {
-    return 0;
+    const ratioRaw = await multicall.wrap(poolContract).getTokenPrice();
+    const ratio = Number(ratioRaw) / 10 ** appToken.tokens[0].decimals;
+    return [ratio];
   }
 }

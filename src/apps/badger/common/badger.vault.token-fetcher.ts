@@ -3,7 +3,6 @@ import { Inject } from '@nestjs/common';
 import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { AppTokenTemplatePositionFetcher } from '~position/template/app-token.template.position-fetcher';
 import {
-  GetDataPropsParams,
   GetPricePerShareParams,
   GetPriceParams,
   GetUnderlyingTokensParams,
@@ -46,8 +45,10 @@ export abstract class BadgerVaultTokenFetcher extends AppTokenTemplatePositionFe
     return definitions.map(v => v.address);
   }
 
-  async getUnderlyingTokenAddresses({ definition }: GetUnderlyingTokensParams<BadgerSett, BadgerVaultTokenDefinition>) {
-    return definition.underlyingTokenAddress;
+  async getUnderlyingTokenDefinitions({
+    definition,
+  }: GetUnderlyingTokensParams<BadgerSett, BadgerVaultTokenDefinition>) {
+    return [{ address: definition.underlyingTokenAddress, network: this.network }];
   }
 
   async getPricePerShare({ contract, appToken, multicall }: GetPricePerShareParams<BadgerSett>) {
@@ -59,7 +60,8 @@ export abstract class BadgerVaultTokenFetcher extends AppTokenTemplatePositionFe
         ? await multicall.wrap(yVaultContract).pricePerShare()
         : await multicall.wrap(contract).getPricePerFullShare();
 
-    return Number(ratioRaw) / 10 ** decimals;
+    const ratio = Number(ratioRaw) / 10 ** decimals;
+    return [ratio];
   }
 
   async getPrice({ appToken, contract, multicall }: GetPriceParams<BadgerSett>) {
@@ -76,17 +78,5 @@ export abstract class BadgerVaultTokenFetcher extends AppTokenTemplatePositionFe
     }
 
     return price;
-  }
-
-  async getReserves({ appToken }: GetDataPropsParams<BadgerSett>) {
-    return [Number(appToken.pricePerShare[0]) * appToken.supply];
-  }
-
-  async getLiquidity({ appToken }: GetDataPropsParams<BadgerSett>) {
-    return appToken.supply * appToken.price;
-  }
-
-  async getApy(_params: GetDataPropsParams<BadgerSett>) {
-    return 0;
   }
 }

@@ -3,7 +3,7 @@ import { Inject } from '@nestjs/common';
 import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { PositionTemplate } from '~app-toolkit/decorators/position-template.decorator';
 import { AppTokenTemplatePositionFetcher } from '~position/template/app-token.template.position-fetcher';
-import { GetUnderlyingTokensParams, GetDataPropsParams } from '~position/template/app-token.template.types';
+import { GetUnderlyingTokensParams } from '~position/template/app-token.template.types';
 
 import { AirswapContractFactory, StakingV2 } from '../contracts';
 
@@ -26,23 +26,15 @@ export class EthereumAirswapSAstV2TokenFetcher extends AppTokenTemplatePositionF
     return ['0x579120871266ccd8de6c85ef59e2ff6743e7cd15'];
   }
 
-  async getUnderlyingTokenAddresses({ contract }: GetUnderlyingTokensParams<StakingV2>) {
-    return contract.token();
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<StakingV2>) {
+    return [{ address: await contract.token(), network: this.network }];
+  }
+
+  async getPricePerShare() {
+    return [1];
   }
 
   async getLabel(): Promise<string> {
     return 'sAST v2';
-  }
-
-  async getReserves({ appToken }: GetDataPropsParams<StakingV2>) {
-    return [appToken.pricePerShare[0] * appToken.supply];
-  }
-
-  async getLiquidity({ appToken }: GetDataPropsParams<StakingV2>) {
-    return appToken.price * appToken.supply;
-  }
-
-  getApy(_params: GetDataPropsParams<StakingV2>) {
-    return 0;
   }
 }

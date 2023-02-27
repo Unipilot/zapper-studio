@@ -29,20 +29,12 @@ export class AvalancheHedgefarmAlphaOneTokenFetcher extends AppTokenTemplatePosi
     return ['0xde4133f0cfa1a61ba94ec64b6fede4acc1fe929e'];
   }
 
-  async getUnderlyingTokenAddresses() {
-    return ['0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e'];
+  async getUnderlyingTokenDefinitions() {
+    return [{ address: '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e', network: this.network }];
   }
 
   async getPricePerShare({ contract }: GetPricePerShareParams<AlphaOne>) {
     return [Number(await contract.pricePerShare()) / 10 ** 6];
-  }
-
-  async getLiquidity({ appToken }: GetDataPropsParams<AlphaOne>) {
-    return appToken.supply * appToken.price;
-  }
-
-  async getReserves({ appToken }: GetDataPropsParams<AlphaOne>) {
-    return [appToken.pricePerShare[0] * appToken.supply];
   }
 
   async getApy(_params: GetDataPropsParams<AlphaOne>) {
@@ -53,6 +45,7 @@ export class AvalancheHedgefarmAlphaOneTokenFetcher extends AppTokenTemplatePosi
   @CacheOnInterval({
     key: `studio:hedgefarm:alpha-one:performance`,
     timeout: 15 * 60 * 1000,
+    failOnMissingData: false,
   })
   async getPerformance(): Promise<Performance> {
     const url = 'https://api.hedgefarm.workers.dev/alpha1/performance';

@@ -7,7 +7,6 @@ import { AppTokenTemplatePositionFetcher } from '~position/template/app-token.te
 import {
   GetAddressesParams,
   DefaultAppTokenDefinition,
-  GetDataPropsParams,
   DefaultAppTokenDataProps,
   GetUnderlyingTokensParams,
   GetPricePerShareParams,
@@ -45,16 +44,17 @@ export class EthereumBancorV3PoolTokenFetcher extends AppTokenTemplatePositionFe
     return addresses;
   }
 
-  async getUnderlyingTokenAddresses({ contract }: GetUnderlyingTokensParams<PoolToken, DefaultAppTokenDefinition>) {
-    const underlyingTokenAddress = await contract.reserveToken();
-    return underlyingTokenAddress.toLowerCase().replace(ETH_ADDR_ALIAS, ZERO_ADDRESS);
+  async getUnderlyingTokenDefinitions({ contract }: GetUnderlyingTokensParams<PoolToken, DefaultAppTokenDefinition>) {
+    const underlyingTokenAddressRaw = await contract.reserveToken();
+    const underlyingTokenAddress = underlyingTokenAddressRaw.toLowerCase().replace(ETH_ADDR_ALIAS, ZERO_ADDRESS);
+    return [{ address: underlyingTokenAddress, network: this.network }];
   }
 
   async getPricePerShare({
     multicall,
     appToken,
   }: GetPricePerShareParams<PoolToken, DefaultAppTokenDataProps, DefaultAppTokenDefinition>) {
-    if (appToken.supply === 0) return 0;
+    if (appToken.supply === 0) return [0];
 
     const bancorContract = this.contractFactory.bancorNetwork({ address: this.bancorAddress, network: this.network });
     const poolCollectionAddress = (await multicall.wrap(bancorContract).poolCollections()).at(-1)!;
@@ -69,18 +69,6 @@ export class EthereumBancorV3PoolTokenFetcher extends AppTokenTemplatePositionFe
     const reserve = Number(poolData.liquidity.stakedBalance) / 10 ** appToken.tokens[0].decimals;
     const pricePerShare = reserve / appToken.supply;
 
-    return pricePerShare;
-  }
-
-  getLiquidity({ appToken }: GetDataPropsParams<PoolToken>) {
-    return appToken.supply * appToken.price;
-  }
-
-  getReserves({ appToken }: GetDataPropsParams<PoolToken>) {
-    return [appToken.pricePerShare[0] * appToken.supply];
-  }
-
-  getApy(_params: GetDataPropsParams<PoolToken>) {
-    return 0;
+    return [pricePerShare];
   }
 }
